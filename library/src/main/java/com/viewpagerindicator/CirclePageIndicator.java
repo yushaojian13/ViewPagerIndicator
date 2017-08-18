@@ -44,19 +44,19 @@ import static android.widget.LinearLayout.VERTICAL;
 public class CirclePageIndicator extends View implements PageIndicator {
     private static final int INVALID_POINTER = -1;
 
-    private float mRadius;
-    private final Paint mPaintPageFill = new Paint(ANTI_ALIAS_FLAG);
-    private final Paint mPaintStroke = new Paint(ANTI_ALIAS_FLAG);
-    private final Paint mPaintFill = new Paint(ANTI_ALIAS_FLAG);
+    private float mRadius; // 选中页面indicator的内圆半径
+    private final Paint mPaintPageFill = new Paint(ANTI_ALIAS_FLAG); // 绘制所有页面indicator的内圆
+    private final Paint mPaintStroke = new Paint(ANTI_ALIAS_FLAG); // 绘制所有页面indicator的描边
+    private final Paint mPaintFill = new Paint(ANTI_ALIAS_FLAG); // 绘制选中页面indicator的内圆
     private ViewPager mViewPager;
     private ViewPager.OnPageChangeListener mListener;
     private int mCurrentPage;
     private int mSnapPage;
-    private float mPageOffset;
+    private float mPageOffset; // 页面滑动偏移比例[0, 1)
     private int mScrollState;
     private int mOrientation;
-    private boolean mCentered;
-    private boolean mSnap;
+    private boolean mCentered; // 是否居中
+    private boolean mSnap; // 猛地关上，即indicator不平滑跳变
 
     private int mTouchSlop;
     private float mLastMotionX = -1;
@@ -90,16 +90,16 @@ public class CirclePageIndicator extends View implements PageIndicator {
         //Retrieve styles attributes
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.CirclePageIndicator, defStyle, 0);
 
-        mCentered = a.getBoolean(R.styleable.CirclePageIndicator_centered, defaultCentered);
-        mOrientation = a.getInt(R.styleable.CirclePageIndicator_android_orientation, defaultOrientation);
+        mCentered = a.getBoolean(R.styleable.CirclePageIndicator_centered, defaultCentered); // 是否居中
+        mOrientation = a.getInt(R.styleable.CirclePageIndicator_android_orientation, defaultOrientation); // 方向
         mPaintPageFill.setStyle(Style.FILL);
-        mPaintPageFill.setColor(a.getColor(R.styleable.CirclePageIndicator_pageColor, defaultPageColor));
+        mPaintPageFill.setColor(a.getColor(R.styleable.CirclePageIndicator_pageColor, defaultPageColor)); // 所有页面indicator的内圆画笔颜色
         mPaintStroke.setStyle(Style.STROKE);
-        mPaintStroke.setColor(a.getColor(R.styleable.CirclePageIndicator_strokeColor, defaultStrokeColor));
-        mPaintStroke.setStrokeWidth(a.getDimension(R.styleable.CirclePageIndicator_strokeWidth, defaultStrokeWidth));
+        mPaintStroke.setColor(a.getColor(R.styleable.CirclePageIndicator_strokeColor, defaultStrokeColor)); // 所有页面indicator的描边画笔颜色
+        mPaintStroke.setStrokeWidth(a.getDimension(R.styleable.CirclePageIndicator_strokeWidth, defaultStrokeWidth)); // 所有页面indicator的描边画笔宽度
         mPaintFill.setStyle(Style.FILL);
-        mPaintFill.setColor(a.getColor(R.styleable.CirclePageIndicator_fillColor, defaultFillColor));
-        mRadius = a.getDimension(R.styleable.CirclePageIndicator_radius, defaultRadius);
+        mPaintFill.setColor(a.getColor(R.styleable.CirclePageIndicator_fillColor, defaultFillColor)); // 选中页面indicator的内圆画笔颜色
+        mRadius = a.getDimension(R.styleable.CirclePageIndicator_radius, defaultRadius); // 选中页面indicator的内圆半径
         mSnap = a.getBoolean(R.styleable.CirclePageIndicator_snap, defaultSnap);
 
         Drawable background = a.getDrawable(R.styleable.CirclePageIndicator_android_background);
@@ -227,24 +227,24 @@ public class CirclePageIndicator extends View implements PageIndicator {
             shortPaddingBefore = getPaddingLeft();
         }
 
-        final float threeRadius = mRadius * 3;
-        final float shortOffset = shortPaddingBefore + mRadius;
-        float longOffset = longPaddingBefore + mRadius;
+        final float threeRadius = mRadius * 3; // 一个圆(mRadius * 2) + 圆间间隙(mRadius * 1)
+        final float shortOffset = shortPaddingBefore + mRadius; // 短边圆心偏移量
+        float longOffset = longPaddingBefore + mRadius; // 长边圆心偏移量
         if (mCentered) {
-            longOffset += ((longSize - longPaddingBefore - longPaddingAfter) / 2.0f) - ((count * threeRadius) / 2.0f);
+            longOffset += ((longSize - longPaddingBefore - longPaddingAfter) / 2.0f) - ((count * 2 * mRadius + (count - 1) * mRadius) / 2.0f);
         }
 
         float dX;
         float dY;
 
-        float pageFillRadius = mRadius;
+        float pageFillRadius = mRadius; // 所有页面indicator的内圆半径
         if (mPaintStroke.getStrokeWidth() > 0) {
             pageFillRadius -= mPaintStroke.getStrokeWidth() / 2.0f;
         }
 
         //Draw stroked circles
         for (int iLoop = 0; iLoop < count; iLoop++) {
-            float drawLong = longOffset + (iLoop * threeRadius);
+            float drawLong = longOffset + (iLoop * threeRadius); // 长边圆心坐标
             if (mOrientation == HORIZONTAL) {
                 dX = drawLong;
                 dY = shortOffset;
@@ -254,19 +254,19 @@ public class CirclePageIndicator extends View implements PageIndicator {
             }
             // Only paint fill if not completely transparent
             if (mPaintPageFill.getAlpha() > 0) {
-                canvas.drawCircle(dX, dY, pageFillRadius, mPaintPageFill);
+                canvas.drawCircle(dX, dY, pageFillRadius, mPaintPageFill); // 绘制所有indicator内圆
             }
 
             // Only paint stroke if a stroke width was non-zero
             if (pageFillRadius != mRadius) {
-                canvas.drawCircle(dX, dY, mRadius, mPaintStroke);
+                canvas.drawCircle(dX, dY, mRadius, mPaintStroke); // 绘制描边。描边会以半径为界，在内外各绘制一半，因此pageFillRadius要减去描边宽一半以避免重合
             }
         }
 
         //Draw the filled circle according to the current scroll
-        float cx = (mSnap ? mSnapPage : mCurrentPage) * threeRadius;
+        float cx = (mSnap ? mSnapPage : mCurrentPage) * threeRadius; // 如果是snap模式，则在页面静止下来前选中圆圆心先不变
         if (!mSnap) {
-            cx += mPageOffset * threeRadius;
+            cx += mPageOffset * threeRadius; // 滑动偏移量
         }
         if (mOrientation == HORIZONTAL) {
             dX = longOffset + cx;
@@ -275,9 +275,10 @@ public class CirclePageIndicator extends View implements PageIndicator {
             dX = shortOffset;
             dY = longOffset + cx;
         }
-        canvas.drawCircle(dX, dY, mRadius, mPaintFill);
+        canvas.drawCircle(dX, dY, mRadius, mPaintFill); // 绘制选中indicator内圆。其半径应该加上描边宽一半，否则会露出一半描边
     }
 
+    // 在Indicator上触摸滑动时同步滑动ViewPager
     public boolean onTouchEvent(android.view.MotionEvent ev) {
         if (super.onTouchEvent(ev)) {
             return true;
@@ -468,8 +469,8 @@ public class CirclePageIndicator extends View implements PageIndicator {
         } else {
             //Calculate the width according the views count
             final int count = mViewPager.getAdapter().getCount();
-            result = (int)(getPaddingLeft() + getPaddingRight()
-                    + (count * 2 * mRadius) + (count - 1) * mRadius + 1);
+            int padding = mOrientation == HORIZONTAL ? getPaddingLeft() + getPaddingRight() : getPaddingTop() + getPaddingBottom();
+            result = (int)(padding + (count * 2 * mRadius) + (count - 1) * mRadius + 1); // (count - 1) * mRadius是圆圈间隙之和（没有描边的情况下）
             //Respect AT_MOST value if that was what is called for by measureSpec
             if (specMode == MeasureSpec.AT_MOST) {
                 result = Math.min(result, specSize);
